@@ -1,0 +1,21 @@
+#:kivy 1.9
+
+BoxLayout:
+  canvas.before:
+    Color:
+      rgba: offwhite
+    Rectangle:
+      pos: self.pos
+      size: self.size
+  orientation: 'vertical'
+  BoxLayout:
+    orientation: 'vertical'
+    padding: 30
+    size_hint_y: 0.55
+  BoxLayout:
+    orientation: 'vertical'
+    size_hint_y: 0.45
+    canvas.before:
+      Color:
+	rgba: 1.0, 1.0, 1.0, 0.8
+

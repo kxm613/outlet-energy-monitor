@@ -26,5 +26,6 @@ class OutletGrid(GridLayout):
             new_button = Button(text=f'{outlet} {enabled_text}\n{self._get_wattage(outlet)} W', 
                                 on_press=self.callback,
                                 halign='center',
-                                background_normal=None)
+                                background_normal='',
+                                color=(0,0,0,1))
             self.add_widget(new_button)

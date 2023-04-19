@@ -118,7 +118,7 @@ class MonitorApp(App):
             self.average = self._sig_figures(new_state['average_wattage']) 
 
     def press_callback(self, instance):
-        outlet_name = instance.text.split('\n')[0]
+        outlet_name = instance.text.split()[0]
         previous_state = self.outlets[outlet_name]['enabled']
 
         new_state = not previous_state

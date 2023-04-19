@@ -19,6 +19,5 @@ class OutletGrid(GridLayout):
     def update_buttons(self, *args, **kwargs):
         self.clear_widgets()
         for outlet in self.outlets:
-            print(self.outlets[outlet])
             new_button = Button(text=f'{outlet}\n{self.get_wattage(outlet)} W', on_press=self.callback)
             self.add_widget(new_button)

@@ -50,11 +50,23 @@ class MonitorService(object):
     def on_message_set_enabled(self, client, userdata, msg):
         try:
             new_config = json.loads(msg.payload.decode('utf-8'))
-            if 'client' not in new_config:
+            if 'outlets' not in new_config:
                 raise InvalidMessage()
-            # things
+            
+            for outlet_name in new_config['outlets']:
+                if outlet_name in self.outlets:
+                    asyncio.run(self.enable_or_disable_outlet(outlet_name, new_config['outlets'][outlet_name]))
+                    
         except InvalidMessage:
             print("Invalid outlet configuration. " + str(msg.payload))
+
+    async def enable_or_disable_outlet(self, outlet_name, state):
+        if state:
+            print(f'Turning on {outlet_name}')
+            await self.outlets[outlet_name].turn_on()
+        else:
+            print(f'Turning off {outlet_name}')
+            await self.outlets[outlet_name].turn_off()
 
     async def poll_usage_data(self):
         self.total_wattage = 0

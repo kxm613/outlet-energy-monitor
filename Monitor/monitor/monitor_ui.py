@@ -118,9 +118,14 @@ class MonitorApp(App):
             self.average = self._sig_figures(new_state['average_wattage']) 
 
     def press_callback(self, instance):
-        print(instance.text)
-        # publish message
-        pass
+        outlet_name = instance.text.split('\n')[0]
+        previous_state = self.outlets[outlet_name]['enabled']
+
+        new_state = not previous_state
+        self.outlets[outlet_name]['enabled'] = new_state
+
+        message = json.dumps({ 'outlets': { outlet_name: new_state }}).encode('utf-8')
+        self._client.publish(TOPIC_ENABLE_OUTLETS, message, qos=1)        
 
     def _sig_figures(self, x, sig=3):
         if x == 0:

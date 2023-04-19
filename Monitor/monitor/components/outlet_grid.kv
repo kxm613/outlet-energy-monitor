@@ -1,0 +1,19 @@
+#:kivy 1.9
+#:import OutletGrid monitor.components.outlet_grid.OutletGrid
+#:include monitor/colors.kv
+
+<-OutletGrid>:
+    canvas:
+        Color:
+            rgba: bg_blue
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    cols: 2
+    row_force_default: True
+    col_default_width: (self.width - 28) / 2
+    row_default_height: (self.height - 28) / 2
+    orientation: 'lr-tb'
+    padding: 10
+    spacing: 8

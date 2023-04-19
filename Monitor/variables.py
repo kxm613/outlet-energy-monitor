@@ -4,7 +4,7 @@ DEVICE_ID_FILENAME = '/sys/class/net/eth0/address'
 
 # MQTT Topic Names
 TOPIC_CURRENT_USAGE = "monitor/usage"
-TOPIC_ENABLED_OUTLETS = "monitor/enabled"
+TOPIC_ENABLE_OUTLETS = "monitor/set_enabled"
 
 
 def get_device_id():

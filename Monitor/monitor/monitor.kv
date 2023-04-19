@@ -1,5 +1,6 @@
 #:kivy 1.9
 #:include monitor/colors.kv
+#:include monitor/components/outlet_grid.kv
 
 BoxLayout:
   canvas.before:
@@ -26,28 +27,15 @@ BoxLayout:
       text: f'{app.wattage} W'
       color: black
     Label:
-      font_size: 37
+      font_size: 34
       center_x: root.width / 2
       markup: True
       text: app.diff_text
       color: navy
-  GridLayout:
-    cols: 2
-    row_force_default: True
-    col_default_width: (self.width - 28) / 2
-    row_default_height: (self.height - 28) / 2
-    orientation: 'lr-tb'
-    padding: 10
-    spacing: 8
+  OutletGrid:
     size_hint_y: 0.53
-    canvas:
-      Color:
-        rgba: bg_blue
-      Rectangle:
-        pos: self.pos
-        size: self.size
-    Button:
-      text: 'Device 1'
-    Button:
-      text: 'Device 2'
+    id: outlet_buttons
+    outlets: app.outlets
+    callback: app.press_callback
+
 

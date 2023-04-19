@@ -1,10 +1,10 @@
 import platform
 from kivy.app import App
-from kivy.properties import NumericProperty, AliasProperty, BooleanProperty, StringProperty
+from kivy.properties import NumericProperty, AliasProperty, BooleanProperty, StringProperty, DictProperty
 from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
-from math import fabs
+from kivy.uix.button import Button
 import json
 import os
 from paho.mqtt.client import Client
@@ -14,6 +14,8 @@ import monitor.ip_info
 
 import colorsys
 import datetime
+from math import fabs, log10, floor
+
 
 MQTT_CLIENT_ID = "monitor_ui"
 
@@ -22,8 +24,15 @@ class MonitorApp(App):
     #_updated = False
     #_updatingUI = False
 
+    _outlets = DictProperty({})
     _wattage = NumericProperty(0)
     _average = NumericProperty(0)
+
+    def _get_outlets(self):
+        return self._outlets
+
+    def _set_outlets(self, value):
+        self._outlets = value
 
     def _get_wattage(self):
         return self._wattage
@@ -57,6 +66,7 @@ class MonitorApp(App):
 
         return f'[color={text_color}]{plus_or_minus} {abs(self.difference)} W[/color]'
 
+    outlets = AliasProperty(_get_outlets, _set_outlets, bind=['_outlets'])
     wattage = AliasProperty(_get_wattage, _set_wattage, bind=['_wattage'])
     average = AliasProperty(_get_average, _set_average, bind=['_average'])
     difference = AliasProperty(_get_difference, bind=['_wattage', '_average'])
@@ -66,7 +76,6 @@ class MonitorApp(App):
     gpio17_pressed = BooleanProperty(False)
 
     def on_start(self):
-        self._publish_clock = None
         self.mqtt_broker_bridged = False
         self.mqtt = Client(client_id=MQTT_CLIENT_ID)
         self.mqtt.enable_logger()
@@ -100,10 +109,26 @@ class MonitorApp(App):
     def receive_new_state(self, client, userdata, message):
         new_state = json.loads(message.payload.decode('utf-8'))
         
-        if 'wattage' in new_state:
-            self.wattage = new_state['wattage']
-        if 'average' in new_state:
-            self.average = new_state['average']
+        if 'outlets' in new_state:
+            self.outlets = new_state['outlets']
+
+        if 'total_wattage' in new_state:
+            self.wattage = self._sig_figures(new_state['total_wattage'])
+        if 'average_wattage' in new_state:
+            self.average = self._sig_figures(new_state['average_wattage']) 
+
+    def press_callback(self, instance):
+        print(instance.text)
+        # publish message
+        pass
+
+    def _sig_figures(self, x, sig=3):
+        if x == 0:
+            return 0
+        if x < 1:
+            sig = sig - 1
+        digits = sig - floor(log10(abs(x))) - 1
+        return int(round(x)) if digits == 0 else round(x, digits)
 
     def set_up_GPIO_and_device_status_popup(self):
         self.pi = pigpio.pi()

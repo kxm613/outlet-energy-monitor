@@ -27,7 +27,7 @@ class MonitorApp(App):
     _outlets = DictProperty({})
     _wattage = NumericProperty(0)
     _difference = NumericProperty(0)
-    _diff_color = ListProperty(0.2, 1.0, 0.5)
+    _diff_color = ListProperty([0.2, 1.0, 0.5])
     
     def _get_outlets(self):
         return self._outlets
@@ -64,9 +64,9 @@ class MonitorApp(App):
 
     outlets = AliasProperty(_get_outlets, _set_outlets, bind=['_outlets'])
     wattage = AliasProperty(_get_wattage, _set_wattage, bind=['_wattage'])
-    difference = AliasProperty(_get_difference, bind=['_wattage', '_average'])
+    difference = AliasProperty(_get_difference, _set_difference, bind=['_difference'])
     diff_color = AliasProperty(_get_color, _set_color, bind=['_diff_color'])
-    diff_text = AliasProperty(_get_difference_text, bind=['difference'])
+    diff_text = AliasProperty(_get_difference_text, bind=['difference', 'diff_color'])
     time_text = StringProperty('')
     gpio17_pressed = BooleanProperty(False)
 

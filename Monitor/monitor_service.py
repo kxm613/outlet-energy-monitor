@@ -7,7 +7,6 @@ import paho.mqtt.client as mqtt
 
 from variables import *
 
-TEMP_STATE_FILENAME = "temp_state"
 MQTT_CLIENT_ID = "monitor_service"
 
 
@@ -22,9 +21,9 @@ class MonitorService(object):
         self.outlets = asyncio.run(kasa.Discover.discover(on_discovered=self.on_discovered))
         self.outlet_statuses = {}
         self.total_wattage = 0
-        self.average_wattage = 84.67
+        self.average_wattage = 62.67
         self.difference = 0
-        self.diff_color = (.2, 1, 0)
+        self.diff_color = [.2, 1, 0.5]
         self.to_enable = None
         self.enable_state = True
 
@@ -85,8 +84,6 @@ class MonitorService(object):
                                                    'wattage': device.emeter_realtime.power }
             self.total_wattage += device.emeter_realtime.power
             
-        self.total_wattage
-
     def publish_usage_data(self):
         usage = { 'total_wattage': self.total_wattage,
                   'difference': self.difference,
@@ -113,7 +110,7 @@ class MonitorService(object):
         hue = normalized_diff * (-0.2) + 0.2
         value = abs(normalized_diff) / 3 + 0.5
 
-        self.diff_color = (hue, 1.0, value)
+        self.diff_color = [hue, 1.0, value]
 
     async def serve(self):
         self._client.connect(MQTT_BROKER_HOST,
@@ -123,7 +120,9 @@ class MonitorService(object):
 
         while True:
             await self.poll_usage_data()
+            self.calculate_difference()
             self.publish_usage_data()
+            self.publish_difference_color()
             await asyncio.sleep(1)
 
         

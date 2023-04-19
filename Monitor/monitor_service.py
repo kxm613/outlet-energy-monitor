@@ -22,6 +22,8 @@ class MonitorService(object):
         self.outlets = asyncio.run(kasa.Discover.discover(on_discovered=self.on_discovered))
         self.outlet_statuses = {}
         self.total_wattage = 0
+        self.to_enable = None
+        self.enable_state = True
 
     async def on_discovered(self, dev):
         # filter out non-emeters
@@ -54,21 +56,25 @@ class MonitorService(object):
                 raise InvalidMessage()
             
             for outlet_name in new_config['outlets']:
-                if outlet_name in self.outlets:
-                    asyncio.run(self.enable_or_disable_outlet(outlet_name, new_config['outlets'][outlet_name]))
+                for dev in self.outlets.values():
+                    if outlet_name == dev.alias:
+                        self.schedule_enable(dev, new_config['outlets'][outlet_name])
                     
         except InvalidMessage:
             print("Invalid outlet configuration. " + str(msg.payload))
 
-    async def enable_or_disable_outlet(self, outlet_name, state):
-        if state:
-            print(f'Turning on {outlet_name}')
-            await self.outlets[outlet_name].turn_on()
-        else:
-            print(f'Turning off {outlet_name}')
-            await self.outlets[outlet_name].turn_off()
+    def schedule_enable(self, device, state):
+        self.to_enable = device
+        self.enable_state = state
 
     async def poll_usage_data(self):
+        if self.to_enable:
+            if self.enable_state:
+                await self.to_enable.turn_on()
+            else:
+                await self.to_enable.turn_off()
+            self.to_enable = None
+
         self.total_wattage = 0
         for device in self.outlets.values():
             await device.update()

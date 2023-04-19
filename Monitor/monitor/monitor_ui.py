@@ -125,7 +125,7 @@ class MonitorApp(App):
         self.outlets[outlet_name]['enabled'] = new_state
 
         message = json.dumps({ 'outlets': { outlet_name: new_state }}).encode('utf-8')
-        self._client.publish(TOPIC_ENABLE_OUTLETS, message, qos=1)        
+        self.mqtt.publish(TOPIC_ENABLE_OUTLETS, message, qos=1)        
 
     def _sig_figures(self, x, sig=3):
         if x == 0:

@@ -1,6 +1,6 @@
 import platform
 from kivy.app import App
-from kivy.properties import NumericProperty, AliasProperty, BooleanProperty, StringProperty, DictProperty
+from kivy.properties import NumericProperty, AliasProperty, BooleanProperty, StringProperty, DictProperty, ListProperty
 from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
@@ -26,8 +26,9 @@ class MonitorApp(App):
 
     _outlets = DictProperty({})
     _wattage = NumericProperty(0)
-    _average = NumericProperty(0)
-
+    _difference = NumericProperty(0)
+    _diff_color = ListProperty(0.2, 1.0, 0.5)
+    
     def _get_outlets(self):
         return self._outlets
 
@@ -40,37 +41,31 @@ class MonitorApp(App):
     def _set_wattage(self, value):
         self._wattage = value
     
-    def _get_average(self):
-        return self._average
-
-    def _set_average(self, value):
-        self._average = value
-
     def _get_difference(self):
-        return self.wattage - self.average
+        return self._difference
+    
+    def _set_difference(self, value):
+        self._difference = value
 
     def _get_color(self):
-        # scaling difference to be between 1x and -1x of the average
-        normalized_diff = self.difference / (self.average + 0.001)
-        normalized_diff = min(1, max(normalized_diff, -1))
+        return self._diff_color
+    
+    def _set_color(self, value):
+        self._diff_color = value
 
-        # converting normalized difference to hue, 1x -> red (0), -1x -> green (0.4)
-        hue = normalized_diff * (-0.2) + 0.2
-        value = abs(normalized_diff) / 3 + 0.5
-
-        return (hue, 1.0, value)
+    def _get_color(self):
+        return self._diff_color
 
     def _get_difference_text(self):
-        text_color = '%02x%02x%02x' % tuple(map(lambda x: round(x * 255), colorsys.hsv_to_rgb(*self.color)))
+        text_color = '%02x%02x%02x' % tuple(map(lambda x: round(x * 255), colorsys.hsv_to_rgb(*self.diff_color)))
         plus_or_minus = '±' if (self.difference == 0) else ('+' if (self.difference > 0) else '-')
 
-        return f'[color={text_color}]{plus_or_minus} {abs(self.difference)} W[/color]'
+        return f'[color={text_color}]{plus_or_minus} {abs(self.difference):.2f} W[/color]'
 
     outlets = AliasProperty(_get_outlets, _set_outlets, bind=['_outlets'])
     wattage = AliasProperty(_get_wattage, _set_wattage, bind=['_wattage'])
-    average = AliasProperty(_get_average, _set_average, bind=['_average'])
     difference = AliasProperty(_get_difference, bind=['_wattage', '_average'])
-    color = AliasProperty(_get_color, bind=['difference'])
+    diff_color = AliasProperty(_get_color, _set_color, bind=['_diff_color'])
     diff_text = AliasProperty(_get_difference_text, bind=['difference'])
     time_text = StringProperty('')
     gpio17_pressed = BooleanProperty(False)
@@ -114,8 +109,10 @@ class MonitorApp(App):
 
         if 'total_wattage' in new_state:
             self.wattage = self._sig_figures(new_state['total_wattage'])
-        if 'average_wattage' in new_state:
-            self.average = self._sig_figures(new_state['average_wattage']) 
+        if 'difference' in new_state:
+            self.difference = self._sig_figures(new_state['difference'])
+        if 'diff_color' in new_state:
+            self.diff_color = new_state['diff_color']
 
     def press_callback(self, instance):
         outlet_name = instance.text.split()[0]

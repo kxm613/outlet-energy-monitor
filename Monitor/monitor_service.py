@@ -22,6 +22,9 @@ class MonitorService(object):
         self.outlets = asyncio.run(kasa.Discover.discover(on_discovered=self.on_discovered))
         self.outlet_statuses = {}
         self.total_wattage = 0
+        self.average_wattage = 84.67
+        self.difference = 0
+        self.diff_color = (.2, 1, 0)
         self.to_enable = None
         self.enable_state = True
 
@@ -86,11 +89,31 @@ class MonitorService(object):
 
     def publish_usage_data(self):
         usage = { 'total_wattage': self.total_wattage,
-                  'average_wattage': 20,
+                  'difference': self.difference,
+                  'diff_color': self.diff_color,
                   'outlets': self.outlet_statuses }
         self._client.publish(TOPIC_CURRENT_USAGE,
                              json.dumps(usage).encode('utf-8'), qos=1,
                              retain=True)
+
+    def publish_difference_color(self):
+        config = { 'client': 'monitor_service',
+                   'color': { 'h': self.diff_color[0],
+                              's': 1.0 },
+                   'brightness': self.diff_color[2],
+                   'on': True }
+        self._client.publish(TOPIC_LAMP_CONFIG,
+                             json.dumps(config).encode('utf-8'), qos=1)
+
+    def calculate_difference(self):
+        self.difference = self.total_wattage - self.average_wattage
+        normalized_diff = self.difference / (self.average_wattage + 0.001)
+        normalized_diff = min(1, max(normalized_diff, -1))
+
+        hue = normalized_diff * (-0.2) + 0.2
+        value = abs(normalized_diff) / 3 + 0.5
+
+        self.diff_color = (hue, 1.0, value)
 
     async def serve(self):
         self._client.connect(MQTT_BROKER_HOST,

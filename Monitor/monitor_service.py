@@ -69,6 +69,11 @@ class MonitorService(object):
         self.to_enable = device
         self.enable_state = state
 
+    async def check_for_outlets(self):
+        new_outlets = await kasa.Discover.discover(on_discovered=self.on_discovered)
+        if self.outlets.keys() != new_outlets.keys():
+            self.outlets = new_outlets
+
     async def poll_usage_data(self):
         if self.to_enable:
             if self.enable_state:
@@ -118,12 +123,18 @@ class MonitorService(object):
                              keepalive=MQTT_BROKER_KEEP_ALIVE_SECS)
         self._client.loop_start()
 
+        count = 0
         while True:
+            if (count >= 10):
+                await self.check_for_outlets()
+                count = 0
+
             await self.poll_usage_data()
             self.calculate_difference()
             self.publish_usage_data()
             self.publish_difference_color()
             await asyncio.sleep(1)
+            count += 1
 
         
 

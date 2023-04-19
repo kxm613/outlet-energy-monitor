@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from monitor.monitor_ui import MonitorUI
+from monitor.monitor_ui import MonitorApp
 
 if __name__ == "__main__":
-    MonitorUI().run()
+    MonitorApp().run()
 

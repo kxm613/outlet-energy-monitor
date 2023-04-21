@@ -22,8 +22,6 @@ BoxLayout:
     Label:
       font_size: 62
       center_x: root.width / 2
-      center_y: root.height / 2
-      halign: 'center'
       text: f'{app.wattage} W'
       color: black
     Label:
@@ -31,7 +29,6 @@ BoxLayout:
       center_x: root.width / 2
       markup: True
       text: app.diff_text
-      color: navy
   OutletGrid:
     size_hint_y: 0.53
     id: outlet_buttons

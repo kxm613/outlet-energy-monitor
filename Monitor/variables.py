@@ -5,7 +5,7 @@ DEVICE_ID_FILENAME = '/sys/class/net/eth0/address'
 # MQTT Topic Names
 TOPIC_CURRENT_USAGE = "monitor/usage"
 TOPIC_ENABLE_OUTLETS = "monitor/set_enabled"
-
+TOPIC_LAMP_CONFIG = "lamp/set_config"
 
 def get_device_id():
     mac_addr = open(DEVICE_ID_FILENAME).read().strip()

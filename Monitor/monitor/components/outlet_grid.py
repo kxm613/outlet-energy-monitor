@@ -10,15 +10,22 @@ class OutletGrid(GridLayout):
     def __init__(self, **kwargs):
         super(OutletGrid, self).__init__(**kwargs)
 
-    def get_wattage(self, outlet):
+    def _get_wattage(self, outlet):
         return self.outlets[outlet]['wattage']
 
+    def _get_enabled(self, outlet):
+        return self.outlets[outlet]['enabled']
+    
     def on_outlets(self, instance, value):
         Clock.schedule_once(self.update_buttons)
         
     def update_buttons(self, *args, **kwargs):
         self.clear_widgets()
         for outlet in self.outlets:
-            print(self.outlets[outlet])
-            new_button = Button(text=f'{outlet}\n{self.get_wattage(outlet)} W', on_press=self.callback)
+            enabled_text = '(On)' if self._get_enabled(outlet) else '(Off)'
+            new_button = Button(text=f'{outlet} {enabled_text}\n{self._get_wattage(outlet)} W', 
+                                on_press=self.callback,
+                                halign='center',
+                                background_normal='',
+                                color=(0,0,0,1))
             self.add_widget(new_button)

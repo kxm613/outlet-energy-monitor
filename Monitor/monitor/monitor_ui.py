@@ -60,7 +60,7 @@ class MonitorApp(App):
         text_color = '%02x%02x%02x' % tuple(map(lambda x: round(x * 255), colorsys.hsv_to_rgb(*self.diff_color)))
         plus_or_minus = '±' if (self.difference == 0) else ('+' if (self.difference > 0) else '-')
 
-        return f'[color={text_color}]{plus_or_minus} {abs(self.difference):.4f} W[/color]'
+        return f'[color={text_color}]{plus_or_minus} {abs(self.difference):.2f} W[/color]'
 
     outlets = AliasProperty(_get_outlets, _set_outlets, bind=['_outlets'])
     wattage = AliasProperty(_get_wattage, _set_wattage, bind=['_wattage'])
@@ -110,7 +110,7 @@ class MonitorApp(App):
         if 'total_wattage' in new_state:
             self.wattage = self._sig_figures(new_state['total_wattage'])
         if 'difference' in new_state:
-            self.difference = self._sig_figures(new_state['difference'])
+            self.difference = new_state['difference']
         if 'diff_color' in new_state:
             self.diff_color = new_state['diff_color']
 

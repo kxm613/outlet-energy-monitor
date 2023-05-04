@@ -107,8 +107,8 @@ class MonitorApp(App):
         if 'outlets' in new_state:
             self.outlets = new_state['outlets']
 
-        if 'total_wattage' in new_state:
-            self.wattage = self._sig_figures(new_state['total_wattage'])
+        if 'wattage' in new_state:
+            self.wattage = self._sig_figures(new_state['wattage'])
         if 'difference' in new_state:
             self.difference = new_state['difference']
         if 'diff_color' in new_state:

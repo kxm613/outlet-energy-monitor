@@ -4,6 +4,7 @@ DEVICE_ID_FILENAME = '/sys/class/net/eth0/address'
 
 # MQTT Topic Names
 TOPIC_CURRENT_USAGE = "monitor/usage"
+TOPIC_HOUR_USAGE = "monitor/usage/last_hour"
 TOPIC_ENABLE_OUTLETS = "monitor/set_enabled"
 TOPIC_LAMP_CONFIG = "lamp/set_config"
 

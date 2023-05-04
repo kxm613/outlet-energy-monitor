@@ -5,6 +5,7 @@ import asyncio
 import json
 import paho.mqtt.client as mqtt
 
+from datetime import datetime, timezone, timedelta
 from variables import *
 
 MQTT_CLIENT_ID = "monitor_service"
@@ -20,8 +21,10 @@ class MonitorService(object):
         self._client = self._create_and_configure_broker_client()
         self.outlets = asyncio.run(kasa.Discover.discover(on_discovered=self.on_discovered))
         self.outlet_statuses = {}
-        self.total_wattage = 0
-        self.average_wattage = 62.67
+        self.current_wattage = 0
+        self.hour_wattage = 0
+        self.last_poll = datetime.now(timezone.utc)
+        self.hour_average = 62.67
         self.difference = 0
         self.diff_color = [.2, 1, 0.5]
         self.to_enable = None
@@ -82,15 +85,34 @@ class MonitorService(object):
                 await self.to_enable.turn_off()
             self.to_enable = None
 
-        self.total_wattage = 0
+        self.current_wattage = 0
         for device in self.outlets.values():
             await device.update()
             self.outlet_statuses[device.alias] = { 'enabled': device.is_on, 
                                                    'wattage': device.emeter_realtime.power }
-            self.total_wattage += device.emeter_realtime.power
-            
-    def publish_usage_data(self):
-        usage = { 'total_wattage': self.total_wattage,
+            self.current_wattage += device.emeter_realtime.power
+
+        poll_time = datetime.now(timezone.utc)
+        watt_hours = self.current_wattage * ((poll_time - self.last_poll) / timedelta(hours=1))
+        print(f"Polling at {poll_time.strftime('%H:%M:%S (UTC)')}, added {watt_hours} Wh")
+        self.hour_wattage += watt_hours
+
+        if poll_time.hour != self.last_poll.hour:
+            print(f"Publishing last hour's usage: {self.hour_wattage} Wh for hour {self.last_poll.hour} (UTC)")
+            self.publish_hour_usage()
+            self.hour_wattage = 0
+
+        self.last_poll = poll_time
+
+    def publish_hour_usage(self):
+        last_hour = { 'hour': self.last_poll.hour,
+                      'wattage': self.hour_wattage }
+        self._client.publish(TOPIC_HOUR_USAGE,
+                             json.dumps(last_hour).encode('utf-8'), qos=1,
+                             retain=True)
+
+    def publish_current_usage(self):
+        usage = { 'wattage': self.current_wattage,
                   'difference': self.difference,
                   'diff_color': self.diff_color,
                   'outlets': self.outlet_statuses }
@@ -108,8 +130,8 @@ class MonitorService(object):
                              json.dumps(config).encode('utf-8'), qos=1)
 
     def calculate_difference(self):
-        self.difference = self.total_wattage - self.average_wattage
-        normalized_diff = self.difference / (self.average_wattage + 0.001)
+        self.difference = self.current_wattage - self.hour_average
+        normalized_diff = self.difference / (self.hour_average + 0.001)
         normalized_diff = min(1, max(normalized_diff, -1))
 
         hue = normalized_diff * (-0.2) + 0.2
@@ -131,9 +153,10 @@ class MonitorService(object):
 
             await self.poll_usage_data()
             self.calculate_difference()
-            self.publish_usage_data()
+            self.publish_current_usage()
             self.publish_difference_color()
-            await asyncio.sleep(1)
+
+            await asyncio.sleep(3)
             count += 1
 
         

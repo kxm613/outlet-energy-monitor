@@ -1,0 +1,11 @@
+{% extends "monitor/base.html" %}
+
+{% block title %}Add new Monitor{% endblock %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Add Monitor" />
+</form>
+{% endblock %}

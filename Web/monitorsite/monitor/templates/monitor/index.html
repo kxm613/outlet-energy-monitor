@@ -1,0 +1,18 @@
+{% extends "monitor/base.html" %}
+
+{% block content %}
+
+{% if monitor_list %}
+    <ul>
+    {% for device in monitor_list %}
+       <li><a href="{% url 'monitor:detail' device.device_id %}">
+        {{ device.name }} {{device.device_id }}</a></li>
+    {% endfor %}
+    </ul>
+    <a href="{% url 'monitor:add' %}">Add a new Monitor</a>
+{% else %}
+    <p>No devices are available.</p>
+    <a href="{% url 'monitor:add' %}">Add a new Monitor</a>
+{% endif %}
+
+{% endblock %}

@@ -89,6 +89,11 @@ function MonitorPage($){
 	    obj.updateOutlets();
         },
 
+	updateTime: function() {
+	    let time = new Date();
+	    $('#time-text').text(time.toLocaleTimeString());
+	},
+
 	updateText: function() {
 	    $('#wattage-text').text(`${obj.state.wattage} W`);
 	    $('#diff-text').text(`${obj.state.difference >= 0 ? '+' : '-'} ${Math.abs(obj.state.difference)} W`);
@@ -132,6 +137,7 @@ function MonitorPage($){
             obj.client.onConnectionLost = obj.onConnectionLost;
             obj.client.onMessageArrived = obj.onMessageArrived;
 
+	    setInterval(obj.updateTime, 500);
             obj.connect();
         },
     };

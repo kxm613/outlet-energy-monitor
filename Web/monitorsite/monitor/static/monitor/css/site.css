@@ -51,7 +51,7 @@ a, h2, label, p, li::marker {
 
 #graph-container {
   width: 100%;
-  height: 100%;
+  height: calc(100% - 114px);
   background-color: #F7F7F7;
 }
 

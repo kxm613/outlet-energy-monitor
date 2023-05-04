@@ -41,35 +41,41 @@ function GraphHandler($){
 	updateUI: function() {
 	    var sum = Object.values(obj.wattages).reduce((a, b) => a + b, 0);
             $('#graph-header').text(`Total Current Usage: ${sum.toFixed(1)} W`);
-	    obj.currentUsagePoint.data = [ { x: "12 PM", y: sum, r: sum / 10 }];
+
+	    var x_pos = new Date().getHours() + new Date().getMinutes() / 60;
+	    obj.currentUsagePoint.data = [ { x: x_pos, y: sum, r: Math.round(sum / 10) }];
+	    obj.graph.update();
         },
 
+	labels: ["12 AM","","","3 AM","","","6 AM","","","9 AM","","","12 PM","","","3 PM","","","6 PM","","","9 PM","",""],
 	wattages: {},
 	data: {
-	    labels: ["12 AM","","","3 AM","","","6 AM","","","9 AM","","","12 PM","","","3 PM","","","6 PM","","","9 PM","",""],
 	    datasets: []
 	},
 	currentUsagePoint: { type: 'bubble',
 	                     label: 'Current Usage',
-			     backgroundColor: 'rgba(94, 120, 247, .6)',
+			     backgroundColor: 'rgba(94, 120, 247, 0.83)',
 	                     data: [ ] },
 
 	client: new Paho.MQTT.Client(hostAddress, Number(hostPort),
             clientId),
 
 	createGraphData: function() {
+	    obj.data.datasets.push(obj.currentUsagePoint);
+
 	    var utc_offset = new Date().getTimezoneOffset() / 60;
 	    for (var [id, label] of Object.entries(window_global.labels)) {
                 var averages = window_global.averages[id];
                 // shifting the graph (which records averages for UTC hours) to the user's timezone 
                 var timezone_averages = averages.slice(utc_offset).concat(averages.slice(0, utc_offset));
+		var datapoints = timezone_averages.map((average, i) => { return { x: i, y: average }; });
                 obj.data.datasets.push({ type: 'line',
 			             label: label, 
-	    	  	             data: timezone_averages,
+	    	  	             data: datapoints,
     			             borderColor: "#46bdc6",
+				     fill: { target: 'origin', above: 'rgba(236, 248, 249, 0.62)' },
     			             tension: 0.2 });
             }
-	    obj.data.datasets.push(obj.currentUsagePoint);
 	},
 
         init: function() {
@@ -81,7 +87,20 @@ function GraphHandler($){
 		data: obj.data, 
 		options: { 
 		    scales: {
-			y: { stacked: true }
+			x: {
+			    type: 'linear',
+			    min: 0,
+			    max: 23,
+			    title: { display: true, text: 'Hour of the Day' },
+			    ticks: {
+			        callback: (value, i, ticks) => obj.labels[i],
+				stepSize: 1
+			    }
+			},
+			y: { 
+			    stacked: true,
+			    title: { display: true, text: 'Wattage (W or Wh)'}
+			}
 		    }
 		}
 	    });

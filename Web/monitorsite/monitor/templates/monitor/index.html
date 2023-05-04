@@ -10,6 +10,7 @@
     {% endfor %}
     </ul>
     <a href="{% url 'monitor:graph' %}">Your Usage Graph</a>
+    <br/>
     <a href="{% url 'monitor:add' %}">Add a new Monitor</a>
 {% else %}
     <p>No devices are available.</p>

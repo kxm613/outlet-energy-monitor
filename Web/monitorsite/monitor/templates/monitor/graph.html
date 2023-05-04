@@ -37,7 +37,7 @@
 
 	{% if monitor_list %}
 	    <h2 id="graph-header">Total Current Usage: 0 W</h2>
-	    <div id="graph-container"><canvas id="graph"></canvas></div>
+	    <div id="graph-container"><canvas id="graph" style="width: 100%; height: 100%;"></canvas></div>
 	{% else %}
 	    <h2 id="graph-header">No data (no Monitors associated with your user).</h2>
 	{% endif %}

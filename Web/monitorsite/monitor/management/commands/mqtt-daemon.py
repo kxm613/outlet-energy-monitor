@@ -59,6 +59,7 @@ class Command(BaseCommand):
             try:
                 device = Monitor.objects.get(device_id=device_id)
                 print("Found {}".format(device))
+                device.publish_average_msg(datetime.now(timezone.utc).hour)
             except Monitor.DoesNotExist:
                 # this is a new device - create new record for it
                 new_device = Monitor(device_id=device_id)
@@ -95,7 +96,7 @@ class Command(BaseCommand):
 
         try:
             monitor = Monitor.objects.get(device_id=device_id)
-            print(f"Updating hour average for {monitor}")
+            print(f"Updating hour average for device {monitor}")
             monitor.update_averages(last_hour['hour'], last_hour['wattage'])
         except Monitor.DoesNotExist:
             print(f"Invalid device ID (topic: {message.topic})")
@@ -103,12 +104,14 @@ class Command(BaseCommand):
     async def _handle_averages(self):
         last_poll = datetime.now(timezone.utc)
         while True:
+            print('Polling...')
             current_poll = datetime.now(timezone.utc)
             if current_poll.hour != last_poll.hour:
                 for monitor in Monitor.objects.all():
                     if monitor.user == User.objects.get(username=settings.DEFAULT_USER):
                         continue
-                    monitor.publish_average_msg()
+                    print(f'Publishing hourly average for device {monitor}')
+                    monitor.publish_average_msg(current_poll.hour)
 
             last_poll = current_poll
             await asyncio.sleep(180)

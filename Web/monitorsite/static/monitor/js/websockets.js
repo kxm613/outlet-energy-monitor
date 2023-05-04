@@ -1,43 +1,40 @@
 const hostAddress = window_global['mqtt']['hostname'];
 const hostPort = window_global['mqtt']['websockets_port'];
 const clientId = Math.random() + "_web_client";
-const username = window_global['device_id'];
-const password = window_global['session_key'];
 const deviceId = window_global['device_id'];
 
-function LampiPage($){
+function MonitorPage($){
 
     console.log(clientId);
 
     obj = {
-        connect : function() {
+        connect: function() {
           obj.client.connect({onSuccess: obj.onConnect,
-            onFailure: obj.onFailure,
-            userName: username, password: password });
+            onFailure: obj.onFailure});
         },
 
-        onFailure : function(response) {
+        onFailure: function(response) {
           console.log(response);
         },
 
-        onConnect : function(response) {
-          obj.client.subscribe("devices/" + deviceId + "/lamp/changed", {qos:1});
+        onConnect: function(response) {
+          obj.client.subscribe("devices/" + deviceId + "/monitor/usage", {qos:1});
           obj.client.subscribe("$SYS/broker/connection/" + deviceId + "_broker/state", {qos:1});
         },
 
-        onConnectionLost : function(responseObject) {
+        onConnectionLost: function(responseObject) {
           if (responseObject.errorCode !== 0) {
             console.log("onConnectionLost:" + responseObject.errorMessage);
             obj.connect();
           }
         },
 
-        onMessageArrived : function(message) {
+        onMessageArrived: function(message) {
             if (message.destinationName.endsWith('state')) {
                 obj.onMessageConnectionState(message);
-            } else if (message.destinationName.endsWith('changed')) {
-                obj.onMessageLampChanged(message);
-            } 
+            } else if (message.destinationName.endsWith('usage')) {
+                obj.onMessageUsageChanged(message);
+	    }
         },
 
         onMessageConnectionState: function(message) {
@@ -46,138 +43,96 @@ function LampiPage($){
                 $.unblockUI();
             } else {
                 console.log("Device Disconnected");
-                $.blockUI( {message: '<h1>This LAMPI device does not ' +
+                $.blockUI( {message: '<h1>This device does not ' +
                             'seem to be connected to the Internet.</h1>' +
                             '<p>Please make sure it is powered on ' +
                             'and connected to the network.</p>' });
             }
         },
 
-        onMessageLampChanged: function(message) {
-            new_lampState = JSON.parse(message.payloadString);
-            console.log(new_lampState)
-            if (obj.updated && new_lampState.client == clientId) {
-                return;
-            }
-            obj.lampState.color.h = new_lampState.color.h;
-            obj.lampState.color.s = new_lampState.color.s;
-            obj.lampState.brightness = new_lampState.brightness;
-            obj.lampState.on = new_lampState.on;
+        onMessageUsageChanged: function(message) {
+            new_state = JSON.parse(message.payloadString);
+            console.log(new_state)
+
+            obj.state.wattage = Number.parseFloat(new_state.wattage).toFixed(0);
+            obj.state.difference = Number.parseFloat(new_state.difference).toFixed(2);
+	    obj.state.diff_color = new_state.diff_color;
+	    obj.state.outlets = new_state.outlets;
+
             obj.updateUI();
-            obj.updated = true;
         },
 
-        onPowerToggle : function(inputEvent) {
-          obj.lampState.on = !obj.lampState.on;
-          obj.updatePowerButton();
-          obj.scheduleConfigChange();
+        onOutletToggle: function(inputEvent) {
+	  // prevents conflicts with other buttons in the grid
+	  inputEvent.stopPropagation();
+	  inputEvent.stopImmediatePropagation();
+
+	  device = inputEvent.target.innerHTML.split(' ')[0];
+	  console.log(device);
+ 	  obj.sendOutletToggle(device);
         },
 
-        onSliderInput : function(inputEvent) {
-          value = Number(inputEvent.target.value);
-          
-          if(inputEvent.target.id == "hue-slider") {
-            obj.lampState.color.h = value;
-          } else if(inputEvent.target.id == "saturation-slider") {
-            obj.lampState.color.s = value;
-          } else if(inputEvent.target.id == "brightness-slider") {
-            obj.lampState.brightness = value;
-          }
+        sendOutletToggle: function(device) {
+	  obj.state.outlets[device]['enabled'] = !obj.state.outlets[device]['enabled'];
+	  json = { 'outlets': {} };
+	  json['outlets'][device] = obj.state.outlets[device]['enabled'];
 
-          obj.scheduleConfigChange();
-          obj.updateUIColors();
-        },
-
-        scheduleConfigChange : function() {
-          function onTimeout() {
-            obj.updateTimer = null;
-            obj.sendConfigChange();
-          }
-
-          if(obj.updateTimer == null) {
-            obj.updateTimer = setTimeout(onTimeout, 100);
-          }
-        },
-
-        sendConfigChange : function() {
-          configJson = JSON.stringify(obj.lampState);
-
-          message = new Paho.MQTT.Message(configJson);
-          message.destinationName = "devices/" + deviceId + "/lamp/set_config";
+          message = new Paho.MQTT.Message(JSON.stringify(json));
+          message.destinationName = "devices/" + deviceId + "/monitor/set_enabled";
           message.qos = 1;
           obj.client.send(message);
+	  obj.updateOutlets();
         },
 
-        updateUI : function() {
-          if(obj.isManipulatingSlider) {
-            return;
-          }
-
-          setSliderValues(obj.lampState.color.h,
-            obj.lampState.color.s,
-            obj.lampState.brightness);
-          obj.updatePowerButton();
-          obj.updateUIColors();
+        updateUI: function() {
+	    obj.updateText();
+	    obj.updateOutlets();
         },
 
-        updateUIColors : function() {
-          updateSliderStyles(obj.lampState.color.h,
-            obj.lampState.color.s,
-            obj.lampState.brightness);
-          obj.updateColorBox(obj.lampState.color.h, obj.lampState.color.s);
+	updateText: function() {
+	    $('#wattage-text').text(`${obj.state.wattage} W`);
+	    $('#diff-text').text(`${obj.state.difference >= 0 ? '+' : '-'} ${Math.abs(obj.state.difference)} W`);
+	    diffColor = tinycolor({ h: obj.state.diff_color[0] * 360, s: 1.0, v: obj.state.diff_color[2] });
+	    $('#diff-text').css('color', diffColor.toHexString());
+	},
+
+	updateOutlets: function() {
+	    obj.outletGrid.empty();
+	    $.each(Object.keys(obj.state.outlets), function(i, device) {
+		let wattage = Number.parseFloat(obj.state.outlets[device]['wattage']).toFixed(3);
+		let enabled = obj.state.outlets[device]['enabled'];
+		let text = `${device} (${enabled ? 'On' : 'Off'})<br/>${wattage} W`;
+
+		let button = document.createElement('button');
+		button.className = 'outlet';
+		button.innerHTML = text;
+		$(button).click(obj.onOutletToggle);
+
+		obj.outletGrid.append(button);
+ 	    });
+	},
+
+        state: {
+            wattage: 0,
+	    average: 0,
+	    difference: 0,
+	    diff_color: [.2, 1, .5],
+	    outlets: {},
         },
 
-        updatePowerButton : function() {
-          opacity = obj.lampState.on ? 1.0 : 0.3;
-          $( "#power" ).fadeTo(0, opacity);
-          $( "#power" ).css("color", "#ff0000");
-        },
-
-        updateColorBox : function(hue, saturation) {
-          color = tinycolor({ h:hue * 360, s:saturation, v:1.0 });
-          hexColor = color.toHexString();
-          $( "#colorbox" ).css("background-color", hexColor);
-        },
-
-        lampState : {
-            color : {
-                h: "50",
-                s: "50"
-            },
-            brightness : "50",
-            on: true,
-            client: clientId
-        },
-        client : new Paho.MQTT.Client(hostAddress, Number(hostPort),
+	outletGrid: $('<div id=outlets>').appendTo('#bottom-pane'),
+        client: new Paho.MQTT.Client(hostAddress, Number(hostPort),
             clientId),
-        updateTimer : null,
-        isManipulatingSlider :false,
-        updated: false,
 
-        init : function() {
-
-            if( deviceId == "") {
-                alert("PLEASE FILL IN THE 'deviceId' VARIABLE IN 'lampi.js'," +
-                      " SAVE, AND REFRESH THE PAGE.  THE PAGE WILL NOT WORK " +
-                      "CORRECTLY UNTIL YOU DO!");
+        init: function() {
+            if (deviceId == "") {
+                alert("Invalid Device ID");
                 return;
             }
-
-            setSliderValues(obj.lampState.color.h,
-                obj.lampState.color.s,
-                obj.lampState.brightness);
-
             obj.client.onConnectionLost = obj.onConnectionLost;
             obj.client.onMessageArrived = obj.onMessageArrived;
 
             obj.connect();
-
-            $( "#power" ).click(obj.onPowerToggle);
-            $( ".slider" ).on( "change input", obj.onSliderInput);
-            $( ".slider" ).on( "mousedown touchstart", function() {
-                obj.isManipulatingSlider = true; });
-            $( window ).on( "mouseup mousecancel touchend touchcancel", function() {
-                obj.isManipulatingSlider = false; });
         },
     };
 
@@ -185,7 +140,7 @@ function LampiPage($){
     return obj;
 }
 
-jQuery(LampiPage);
+jQuery(MonitorPage);
 
 
 

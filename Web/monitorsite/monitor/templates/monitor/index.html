@@ -9,6 +9,7 @@
         {{ device.name }} {{device.device_id }}</a></li>
     {% endfor %}
     </ul>
+    <a href="{% url 'monitor:graph' %}">Your Usage Graph</a>
     <a href="{% url 'monitor:add' %}">Add a new Monitor</a>
 {% else %}
     <p>No devices are available.</p>

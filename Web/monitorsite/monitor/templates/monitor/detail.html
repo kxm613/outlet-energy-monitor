@@ -15,14 +15,12 @@
         window_global['mqtt'] = {'hostname': window.location.hostname,
                                 'websockets_port': 50002};
     </script>
-		<div id="top-pane">
-			<div id="sliders">
-			</div>
-		</div>
-		<div id="colorbox"></div>
-		<div id="bottom-pane">
-			<div class="toggle-button" id="power"></div>
-		</div>
+	<div id="top-pane">
+	    <span id="time-text">00:00:00 AM</span>
+	    <span id="wattage-text">0 W</span>
+	    <span id="diff-text">± 0 W</span>
+	</div>
+	<div id="bottom-pane">
 	</div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js" type="text/javascript"></script>
@@ -30,5 +28,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js" type="text/javascript"></script>
 
     <script src="{% static 'monitor/js/websockets.js' %}" type="text/javascript"></script>
+    <script src="{% static 'monitor/js/tinycolor.js' %}" type="text/javascript"></script>
 
 {% endblock %}

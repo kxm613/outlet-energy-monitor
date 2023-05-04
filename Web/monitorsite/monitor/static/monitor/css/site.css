@@ -2,10 +2,12 @@ html, body {
   width: 100%;
   height: 100%;
   background-color: #1A1A1A;
+  overflow: hidden;
 }
 
-a, h2, label, p {
+a, h2, label, p, li::marker {
     color: white;
+    font-size: .7em;
 }
 
 .errorlist {
@@ -32,22 +34,40 @@ a, h2, label, p {
   background-size: contain;
 }
 
-.slider {
-  height: 33.33%;
+#graph-pane {
+  max-width: 600px;
+  max-height: 500px;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-size: 40px;
+  font-family: Tahoma, Verdana, sans-serif;
+  padding: 12px;
+}
+
+#graph {
+  height: 100%;
+}
+
+#graph-container {
+  width: 100%;
+  height: 100%;
+  background-color: #F7F7F7;
 }
 
 #outer-pane {
   min-height: 267px;
   min-width: 200px;
-  max-height: 320px;
-  max-width: 240px;
+  max-height: 640px;
+  max-width: 480px;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  font-size: 40px;
+  font-family: Tahoma, Verdana, sans-serif;
 }
 
-#bottom-pane, #top-pane, #colorbox{
+#bottom-pane, #top-pane {
   float: top;
   overflow: hidden;
   width: 100%;
@@ -55,38 +75,49 @@ a, h2, label, p {
 
 #bottom-pane {
   position: relative;
-  background-color: #000000;
-  height: 27.5%;
+  background-color: rgb(217, 237, 255);
+  height: 45.4%;
+  padding: 0.4em;
+}
+
+#outlets {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: 16px;
+  grid-auto-flow: row dense;
+  grid-template-rows: calc(50% - 24px) calc(50% - 24px);
+  grid-template-columns: calc(50% - 24px) calc(50% - 24px);
+}
+
+.outlet {
+  background-color: #F7F7F7;
+  font-size: .6em;
+  text-align: center;
 }
 
 #top-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: .4em 0;
   background-color: #F7F7F7;
-  height: 67.5%;
+  height: 42.3%;
 }
 
-#colorbox {
-  background-color: #FF0000;
-  height: 2.5%;
+#time-text {
+  font-size: 1em;
+  color: rgb(15, 5, 77);
 }
 
-
-#power {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 27px;
-  height: 30px;
-  margin: -14px 0 0 -15px;
-  background-image: url("../images/power_icon_light.png");
+#wattage-text {
+  font-size: 3.1em;
 }
 
-#sliders {
-  position: relative;
-  top: 50%;
-  left: 50%;
-  height: 50%;
-  width: 75%;
-  transform: translate(-50%, -50%);
+#diff-text {
+  font-size: 1.7em;
+  color: rgb(102, 128, 0);
 }
 
 #labels {
@@ -115,9 +146,9 @@ a, h2, label, p {
     display: inline-block;
     padding: 6px 12px;
     margin-bottom: 0;
-    font-size: 14px;
+    font-size: 0.7em;
     font-weight: 400;
-    line-height: 1.42857143;
+    /*line-height: 1.42857143;*/
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;

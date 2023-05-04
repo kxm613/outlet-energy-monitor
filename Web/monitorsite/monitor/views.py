@@ -27,6 +27,18 @@ class DetailView(LoginRequiredMixin, generic.TemplateView):
         return context
 
 
+class GraphView(LoginRequiredMixin, generic.ListView):
+    template_name = 'monitor/graph.html'
+
+    def get_queryset(self):
+        results = Monitor.objects.filter(user=self.request.user)
+        return results
+
+    def get_context_data(self, **kwargs):
+        context = super(GraphView, self).get_context_data(**kwargs)
+        return context
+
+
 class AddMonitorView(LoginRequiredMixin, generic.FormView):
     template_name = 'monitor/addmonitor.html'
     form_class = AddMonitorForm

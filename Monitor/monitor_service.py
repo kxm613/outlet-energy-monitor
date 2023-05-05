@@ -24,7 +24,7 @@ class MonitorService(object):
         self.current_wattage = 0
         self.hour_wattage = 0
         self.last_poll = datetime.now(timezone.utc)
-        self.hour_average = 62.67
+        self.hour_average = 0
         self.difference = 0
         self.diff_color = [.2, 1, 0.5]
         self.to_enable = None
@@ -42,6 +42,8 @@ class MonitorService(object):
         client.on_connect = self.on_connect
         client.message_callback_add(TOPIC_ENABLE_OUTLETS,
                                     self.on_message_set_enabled)
+        client.message_callback_add(TOPIC_HOUR_AVERAGE,
+                                    self.on_message_average)
         client.on_message = self.default_on_message
         return client
 
@@ -49,10 +51,22 @@ class MonitorService(object):
         self._client.publish(client_state_topic(MQTT_CLIENT_ID), "1",
                              qos=2, retain=True)
         self._client.subscribe(TOPIC_ENABLE_OUTLETS, qos=1)
+        self._client.subscribe(TOPIC_HOUR_AVERAGE, qos=1)
 
-    def default_on_message(self, client, userdata, message):
+    def default_on_message(self, client, userdata, msg):
         print("Received unexpected message on topic " +
-              message.topic + " with payload '" + str(message.payload) + "'")
+              msg.topic + " with payload '" + str(msg.payload) + "'")
+
+    def on_message_average(self, client, userdata, msg):
+        try:
+            new_average = json.loads(msg.payload.decode('utf-8'))
+            if 'hour' not in new_average or new_average['hour'] != datetime.now(timezone.utc).hour:
+                raise InvalidMessage()
+
+            self.hour_average = new_average["wattage"]
+
+        except InvalidMessage:
+            print("Invalid configuration or incorrect hour. " + str(msg.payload))
 
     def on_message_set_enabled(self, client, userdata, msg):
         try:
